@@ -1,0 +1,80 @@
+---
+title: "Practical Machine Learning - Course Project"
+author: "Bharat Dogra"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+This report outlines the process of predicting the manner in which participants performed barbell lifts using data from accelerometers. The goal was to predict the `classe` variable in the training set using a machine learning model trained on wearable sensor data.
+
+## Load Required Libraries
+
+```{r libraries}
+library(caret)
+library(randomForest)
+```
+
+## Load and Clean the Data
+
+```{r load-data}
+train_url <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+test_url  <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+
+training <- read.csv(train_url, na.strings = c("NA", "#DIV/0!", ""))
+testing  <- read.csv(test_url, na.strings = c("NA", "#DIV/0!", ""))
+
+# Remove columns with mostly NA values
+training <- training[, colSums(is.na(training)) == 0]
+
+# Remove non-predictor columns (IDs, timestamps)
+training <- training[, -c(1:7)]
+
+# Make sure the target variable is a factor
+training$classe <- as.factor(training$classe)
+
+# Clean the test set to match training columns
+testing <- testing[, names(training)[-ncol(training)]]
+```
+
+## Train the Random Forest Model
+
+```{r train-model}
+set.seed(12345)
+modelFit <- train(classe ~ ., data = training, method = "rf",
+                  trControl = trainControl(method = "cv", number = 3),
+                  ntree = 100)
+```
+
+## Evaluate Accuracy on Training Set
+
+```{r evaluate-training}
+train_predictions <- predict(modelFit, newdata = training)
+confusionMatrix(train_predictions, training$classe)
+```
+
+## Predict on Final Test Set (20 Cases)
+
+```{r predict-final}
+final_predictions <- predict(modelFit, newdata = testing)
+final_predictions
+```
+
+## Formatted Answers for Submission
+
+```{r quiz-answers}
+for (i in 1:length(final_predictions)) {
+  cat(paste("Problem", i, ":", final_predictions[i]), "\n")
+}
+```
+
+## Summary
+
+The Random Forest model was chosen for its robustness and high accuracy in classification problems. After data cleaning and model training, the accuracy on the training set was approximately 100%. The model was then used to generate predictions for the final 20 test cases. These predictions are ready for submission to the Course Project Prediction Quiz.
+
+
+
